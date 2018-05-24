@@ -7,7 +7,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,14 +36,14 @@ public class DocumentConverter {
         return directory.getCanonicalPath();
     }
 
-    private void runConversionFromRawFilesToJSONTranslatedDocuments() {
+    public void runConversionFromRawFilesToJSONTranslatedDocuments() {
         try (Stream<Path> paths = Files.walk(Paths.get(pathToInputDocumentsDir))) {
             paths.filter(Files::isRegularFile)
                     .forEach(rawTextFilePath -> {
-                        String textDocument = readFileAsString(rawTextFilePath);
+                        List<String> documentSentences = readDocument(rawTextFilePath);
                         String fileName = rawTextFilePath.getFileName().toString();
-                        Language detectedLanguage = detectLanguage(textDocument, fileName);
-                        String jsonDocument =  generateJSONdocument(textDocument, detectedLanguage);
+                        Language detectedLanguage = detectLanguage(documentSentences, fileName);
+                        String jsonDocument =  generateJSONdocument(documentSentences, detectedLanguage);
                         saveDocumentInOutputDirectory(fileName+".json", jsonDocument);
                     });
         } catch (IOException e) {
@@ -51,22 +51,20 @@ public class DocumentConverter {
         }
     }
 
-    private String readFileAsString(Path filePath) {
-        String fileContent = null;
+    private List<String> readDocument(Path filePath) {
+        List<String> document = new ArrayList<>();
         try {
-            fileContent = Files.readAllLines(filePath, Charset.defaultCharset())
-                    .stream()
-                    .map(line -> line+"\n")
-                    .collect(Collectors.joining());
+            document = new ArrayList<>(Files.readAllLines(filePath, Charset.defaultCharset()));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return fileContent;
+        return document;
     }
 
-    private Language detectLanguage(String input, String fileName) {
-        if (input != null && !input.isEmpty()) {
+    private Language detectLanguage(List<String> documentSentences, String fileName) {
+        if (documentSentences != null && !documentSentences.isEmpty()) {
             try {
+                String input = documentSentences.stream().collect(Collectors.joining(" "));
                 return detector.detectLanguage(input);
             } catch (LangDetectException e) {
                 System.err.println("Cannot detect language of file: " + fileName);
@@ -76,15 +74,15 @@ public class DocumentConverter {
         return Language.OTHER;
     }
 
-    private String generateJSONdocument(String textDocument, Language detectedLanguage) {
+    private String generateJSONdocument(List<String> documentSentences, Language detectedLanguage) {
         String jsonDocument = null;
         if (detectedLanguage.equals(Language.POLISH)) {
-            String englishTranslation = translator.translateFromPolishToEnglish(textDocument);
+            List<String> englishTranslation = translator.translateFromPolishToEnglish(documentSentences);
             if (!englishTranslation.isEmpty()) {
-                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(textDocument, englishTranslation);
+                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(documentSentences, englishTranslation);
             }
         } else if (detectedLanguage.equals(Language.ENGLISH)) {
-            jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(null, textDocument);
+            jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(null, documentSentences);
         }
         return jsonDocument;
     }

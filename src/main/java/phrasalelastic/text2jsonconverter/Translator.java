@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Translator {
 
@@ -32,8 +34,8 @@ public class Translator {
         }
     }
 
-    public String translateFromPolishToEnglish(String polishInput) {
-        String translation = "";
+    public List<String> translateFromPolishToEnglish(List<String> polishInput) {
+        List<String> translation = new ArrayList<>();
         boolean retryTranslation = false;
         do {
             try {
@@ -49,13 +51,18 @@ public class Translator {
         return translation;
     }
 
-    private String tryToTranslate(String input) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        outputToTranslate.write(input);
-        String line;
-        while ((line = inputWithTranslation.readLine()) != null) {
-            sb.append(line+"\n");
+    private List<String> tryToTranslate(List<String> input) throws IOException {
+        List<String> translatedSentences = new ArrayList<>();
+        for (int i = 0; i < input.size(); i++) {
+            String nextPolishSentence = input.get(i);
+            outputToTranslate.println(nextPolishSentence);
+            String translation = inputWithTranslation.readLine();
+            if (i == 0 && translation == null) {
+                throw new IOException("Connection timeout.");
+            }
+            translatedSentences.add(translation.replace("\n", "").replace("\r", ""));
         }
-        return sb.toString();
+
+        return translatedSentences;
     }
 }

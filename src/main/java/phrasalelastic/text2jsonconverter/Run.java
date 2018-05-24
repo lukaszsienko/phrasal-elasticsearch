@@ -13,5 +13,6 @@ public class Run {
         int translationSystemPortNumber = Integer.valueOf(args[3]);
 
         DocumentConverter dc = new DocumentConverter(pathToInputDocumentsFolder, pathToOutputJSONdocumentsFolder, translationSystemAddress, translationSystemPortNumber);
+        dc.runConversionFromRawFilesToJSONTranslatedDocuments();
     }
 }

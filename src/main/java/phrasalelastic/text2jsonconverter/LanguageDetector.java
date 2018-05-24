@@ -16,12 +16,10 @@ import java.util.jar.JarFile;
 public class LanguageDetector {
 
     private String profilesDirectoryPath;
-    private Detector detector;
 
     public LanguageDetector() throws Exception {
         profilesDirectoryPath = getDirectoryForProfiles();
         DetectorFactory.loadProfile(profilesDirectoryPath);
-        detector = DetectorFactory.create();
     }
 
     private String getDirectoryForProfiles() throws Exception {
@@ -60,6 +58,7 @@ public class LanguageDetector {
     }
 
     public Language detectLanguage(String input) throws LangDetectException {
+        Detector detector = DetectorFactory.create();
         detector.append(input);
         String codeOfDetectedLanguage = detector.detect();
         return Language.getLanguageByLangCode(codeOfDetectedLanguage);

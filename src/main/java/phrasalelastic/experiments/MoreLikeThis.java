@@ -28,7 +28,7 @@ public class MoreLikeThis {
                         new String[] {"cv_pl", "cv_en"},
                         new String[] {queryText},
                         new MoreLikeThisQueryBuilder.Item[]{});
-
+        moreLikeThisQueryBuilder.minTermFreq(1);
 
         SearchRequest request = new SearchRequest("cvbase");
         request.types("cv");
@@ -43,7 +43,7 @@ public class MoreLikeThis {
             SearchHit[] searchHits = hits.getHits();
             int nr = 1;
             for (SearchHit hit : searchHits) {
-                System.out.println("\rPosition nr "+nr++);
+                System.out.println("\n\n\n\n\n\rPosition nr "+nr++);
                 Map<String, Object> sourceAsMap = hit.getSourceAsMap();
                 String cv_pl = (String) sourceAsMap.get("cv_pl");
                 System.out.println("CV_PL:");

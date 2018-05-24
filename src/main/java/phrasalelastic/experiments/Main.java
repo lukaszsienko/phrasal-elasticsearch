@@ -5,6 +5,8 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -38,15 +40,33 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        Main main = new Main();
+        MoreLikeThis moreLikeThis = new MoreLikeThis();
+        String query = "java programista bazy danych sql mile widziana znajomość Java, J2EE, Spring, Spring MVC, JSF, Thymeleaf, Hibernate, Maven, Git";
+        moreLikeThis.doMoreLikeThisSearch(query);
 
+
+
+        //DocumentsImporter documentsImporter = new DocumentsImporter("/home/lsienko/Pobrane/test_elastic/oferty_json");
+        //documentsImporter.importToElastic();
+        //Main main = new Main();
+        //main.deleteIndex();
         //main.createIndex();
-        main.getAllDocuments();
-        main.addNewDocument();
-        main.getAllDocuments();
-        main.getSpecifiedDocument();
+        //main.getAllDocuments();
+        //main.closeApp();
+    }
 
-        main.closeApp();
+
+
+
+    private void deleteIndex() {
+        DeleteIndexRequest request = new DeleteIndexRequest("cvbase");
+        try {
+            DeleteIndexResponse deleteIndexResponse = client.indices().delete(request);
+            boolean acknowledged = deleteIndexResponse.isAcknowledged();
+            System.out.println("acknowledged = "+acknowledged);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void createIndex() throws IOException {
@@ -94,7 +114,8 @@ public class Main {
             String sourceAsString = hit.getSourceAsString();
             System.out.println(sourceAsString);
             Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-            System.out.println("");
+            System.out.println(sourceAsMap.get("cv_pl"));
+            System.out.println(sourceAsMap.get("cv_en"));
         }
 
     }

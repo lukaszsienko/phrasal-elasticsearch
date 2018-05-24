@@ -3,8 +3,14 @@ package phrasalelastic.text2jsonconverter;
 import com.cybozu.labs.langdetect.LangDetectException;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import phrasalelastic.text2jsonconverter.LanguageDetector.Language;
 
@@ -31,36 +37,31 @@ public class DocumentConverter {
     }
 
     private void runConversionFromRawFilesToJSONTranslatedDocuments() {
-        List<File> filesInDocFolder = getListOfRawDocFiles();
-
-        for (int i = 0; i < filesInDocFolder.size(); i++) {
-            if (filesInDocFolder.get(i).isFile()) {
-                File rawTextFile = filesInDocFolder.get(i);
-                String textDocument = readFileAsString(rawTextFile);
-                Language detectedLanguage = detectLanguage(textDocument, rawTextFile.getName());
-                String jsonDocument =  generateJSONdocument(textDocument, detectedLanguage);
-                saveDocumentInOutputDirectory(rawTextFile.getName()+".json", jsonDocument);
-            }
-        }
-    }
-
-    private List<File> getListOfRawDocFiles() {
-        File documentsFolder = new File(pathToInputDocumentsDir);
-        return Arrays.asList(documentsFolder.listFiles());
-    }
-
-    private String readFileAsString(File file) {
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String nextLine;
-            while ((nextLine = br.readLine()) != null) {
-                sb.append(nextLine+"\n");
-            }
+        try (Stream<Path> paths = Files.walk(Paths.get(pathToInputDocumentsDir))) {
+            paths.filter(Files::isRegularFile)
+                    .forEach(rawTextFilePath -> {
+                        String textDocument = readFileAsString(rawTextFilePath);
+                        String fileName = rawTextFilePath.getFileName().toString();
+                        Language detectedLanguage = detectLanguage(textDocument, fileName);
+                        String jsonDocument =  generateJSONdocument(textDocument, detectedLanguage);
+                        saveDocumentInOutputDirectory(fileName+".json", jsonDocument);
+                    });
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
-        return sb.toString();
+    private String readFileAsString(Path filePath) {
+        String fileContent = null;
+        try {
+            fileContent = Files.readAllLines(filePath, Charset.defaultCharset())
+                    .stream()
+                    .map(line -> line+"\n")
+                    .collect(Collectors.joining());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return fileContent;
     }
 
     private Language detectLanguage(String input, String fileName) {

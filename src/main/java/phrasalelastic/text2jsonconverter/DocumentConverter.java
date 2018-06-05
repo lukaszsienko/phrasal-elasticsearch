@@ -20,12 +20,17 @@ public class DocumentConverter {
     private final String pathToOutputDocumentsDir;
     private final LanguageDetector detector;
     private final Translator translator;
+    private final ConvertedFilesLog convertedFilesLog;
+    private final ConceptsDownloader conceptsDownloader;
+    private int convertedDocsInThisRun = 0;
 
     public DocumentConverter(String pathToInputDocumentsFolder, String pathToOutputJSONdocumentsFolder, String translationSystemAddress, int translationSystemPortNumber) throws Exception {
         pathToInputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToInputDocumentsFolder);
         pathToOutputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToOutputJSONdocumentsFolder);
         detector = new LanguageDetector();
         translator = new Translator(translationSystemAddress, translationSystemPortNumber);
+        convertedFilesLog = new ConvertedFilesLog(pathToInputDocumentsFolder);
+        conceptsDownloader = new ConceptsDownloader();
     }
 
     private String getCanonicalPathOfSpecifiedDirectory(String pathToDirectory) throws IOException {
@@ -36,19 +41,37 @@ public class DocumentConverter {
         return directory.getCanonicalPath();
     }
 
-    public void runConversionFromRawFilesToJSONTranslatedDocuments() {
+    public void runConversionFromRawFilesToJSONTranslatedDocuments(final int maxNumDocumentsToConvert) {
+        convertedDocsInThisRun = 0;
         try (Stream<Path> paths = Files.walk(Paths.get(pathToInputDocumentsDir))) {
+
+            List<String> alreadyConvertedFiles = convertedFilesLog.readAlreadyConvertedFiles();
             paths.filter(Files::isRegularFile)
                     .forEach(rawTextFilePath -> {
-                        List<String> documentSentences = readDocument(rawTextFilePath);
+
                         String fileName = rawTextFilePath.getFileName().toString();
-                        Language detectedLanguage = detectLanguage(documentSentences, fileName);
-                        String jsonDocument =  generateJSONdocument(documentSentences, detectedLanguage);
-                        saveDocumentInOutputDirectory(fileName+".json", jsonDocument);
+                        if (convertedDocsInThisRun <= maxNumDocumentsToConvert && !alreadyConvertedFiles.contains(fileName)) {
+
+                            convertFile(rawTextFilePath, fileName);
+
+                            convertedDocsInThisRun++;
+                            convertedFilesLog.addNewConvertedFileToLog(fileName);
+                        } else {
+                            return;
+                        }
+
                     });
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void convertFile(Path rawTextFilePath, String fileName) {
+        List<String> documentSentences = readDocument(rawTextFilePath);
+        Language detectedLanguage = detectLanguage(documentSentences, fileName);
+        List<String> detectedConcepts = conceptsDownloader.getConcepts(documentSentences, detectedLanguage);
+        String jsonDocument =  generateJSONdocument(documentSentences, detectedLanguage, detectedConcepts);
+        saveDocumentInOutputDirectory(fileName+".json", jsonDocument);
     }
 
     private List<String> readDocument(Path filePath) {
@@ -74,15 +97,15 @@ public class DocumentConverter {
         return Language.OTHER;
     }
 
-    private String generateJSONdocument(List<String> documentSentences, Language detectedLanguage) {
+    private String generateJSONdocument(List<String> documentSentences, Language detectedLanguage, List<String> detectedConcepts) {
         String jsonDocument = null;
         if (detectedLanguage.equals(Language.POLISH)) {
             List<String> englishTranslation = translator.translateFromPolishToEnglish(documentSentences);
             if (!englishTranslation.isEmpty()) {
-                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(documentSentences, englishTranslation);
+                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(detectedLanguage, documentSentences, englishTranslation, detectedConcepts, null);
             }
         } else if (detectedLanguage.equals(Language.ENGLISH)) {
-            jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(null, documentSentences);
+            jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(detectedLanguage, null, documentSentences, null, detectedConcepts);
         }
         return jsonDocument;
     }

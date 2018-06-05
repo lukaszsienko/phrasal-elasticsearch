@@ -75,11 +75,20 @@ public class Main {
                 "  {\n" +
                         "    \"cv\": {\n" +
                         "      \"properties\": {\n" +
+                        "        \"cv_lang_original\": {\n" +
+                        "          \"type\": \"keyword\"\n" +
+                        "        },\n" +
                         "        \"cv_pl\": {\n" +
                         "          \"type\": \"text\"\n" +
                         "        },\n" +
                         "        \"cv_en\": {\n" +
                         "          \"type\": \"text\"\n" +
+                        "        },\n" +
+                        "        \"cv_pl_concepts\": {\n" +
+                        "          \"type\": \"keyword\"\n" +
+                        "        },\n" +
+                        "        \"cv_en_concepts\": {\n" +
+                        "          \"type\": \"keyword\"\n" +
                         "        }\n" +
                         "      }\n" +
                         "    }\n" +

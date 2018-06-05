@@ -36,14 +36,16 @@ public class LanguageDetector {
     }
 
     public enum Language {
-        POLISH("pl"),
-        ENGLISH("en"),
-        OTHER("x");
+        POLISH("pl", it.uniroma1.lcl.jlt.util.Language.PL),
+        ENGLISH("en", it.uniroma1.lcl.jlt.util.Language.EN),
+        OTHER("x", null);
 
         private String languageCode;
+        private it.uniroma1.lcl.jlt.util.Language babelfyLang;
 
-        Language(String languageCode) {
+        Language(String languageCode, it.uniroma1.lcl.jlt.util.Language babelfyLang) {
             this.languageCode = languageCode;
+            this.babelfyLang = babelfyLang;
         }
 
         public static Language getLanguageByLangCode(String langCode) {
@@ -54,6 +56,14 @@ public class LanguageDetector {
                 }
             }
             return Language.OTHER;
+        }
+
+        public String getLanguageCode() {
+            return languageCode;
+        }
+
+        public it.uniroma1.lcl.jlt.util.Language getBabelfyLanguage() {
+            return babelfyLang;
         }
     }
 

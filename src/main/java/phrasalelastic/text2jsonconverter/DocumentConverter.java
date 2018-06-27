@@ -9,9 +9,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.FilenameUtils;
 import phrasalelastic.text2jsonconverter.LanguageDetector.Language;
 
 public class DocumentConverter {
@@ -45,7 +47,7 @@ public class DocumentConverter {
         convertedDocsInThisRun = 0;
         try (Stream<Path> paths = Files.walk(Paths.get(pathToInputDocumentsDir))) {
 
-            List<String> alreadyConvertedFiles = convertedFilesLog.readAlreadyConvertedFiles();
+            Set<String> alreadyConvertedFiles = convertedFilesLog.readAlreadyConvertedFiles();
             paths.filter(Files::isRegularFile)
                     .forEach(rawTextFilePath -> {
 
@@ -64,13 +66,15 @@ public class DocumentConverter {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println("convertedDocsInThisRun = "+convertedDocsInThisRun);
     }
 
     private void convertFile(Path rawTextFilePath, String fileName) {
+        String docID = FilenameUtils.removeExtension(fileName);
         List<String> documentSentences = readDocument(rawTextFilePath);
         Language detectedLanguage = detectLanguage(documentSentences, fileName);
         List<String> detectedConcepts = conceptsDownloader.getConcepts(documentSentences, detectedLanguage);
-        String jsonDocument =  generateJSONdocument(documentSentences, detectedLanguage, detectedConcepts);
+        String jsonDocument =  generateJSONdocument(docID, documentSentences, detectedLanguage, detectedConcepts);
         saveDocumentInOutputDirectory(fileName+".json", jsonDocument);
     }
 
@@ -88,7 +92,16 @@ public class DocumentConverter {
         if (documentSentences != null && !documentSentences.isEmpty()) {
             try {
                 String input = documentSentences.stream().collect(Collectors.joining(" "));
-                return detector.detectLanguage(input);
+                Language language = detector.detectLanguage(input);
+                if (language.equals(Language.OTHER)) {
+                    //lang detector sometimes goes crazy when doc is uppercase only
+                    String lowercased = input.toLowerCase();
+                    language = detector.detectLanguage(lowercased);
+                    if (language.equals(Language.OTHER)) {
+                        language = Language.POLISH;
+                    }
+                }
+                return language;
             } catch (LangDetectException e) {
                 System.err.println("Cannot detect language of file: " + fileName);
                 e.printStackTrace();
@@ -97,15 +110,15 @@ public class DocumentConverter {
         return Language.OTHER;
     }
 
-    private String generateJSONdocument(List<String> documentSentences, Language detectedLanguage, List<String> detectedConcepts) {
+    private String generateJSONdocument(String cvID, List<String> documentSentences, Language detectedLanguage, List<String> detectedConcepts) {
         String jsonDocument = null;
         if (detectedLanguage.equals(Language.POLISH)) {
             List<String> englishTranslation = translator.translateFromPolishToEnglish(documentSentences);
             if (!englishTranslation.isEmpty()) {
-                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(detectedLanguage, documentSentences, englishTranslation, detectedConcepts, null);
+                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, documentSentences, englishTranslation, detectedConcepts, null);
             }
         } else if (detectedLanguage.equals(Language.ENGLISH)) {
-            jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(detectedLanguage, null, documentSentences, null, detectedConcepts);
+            jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, null, documentSentences, null, detectedConcepts);
         }
         return jsonDocument;
     }

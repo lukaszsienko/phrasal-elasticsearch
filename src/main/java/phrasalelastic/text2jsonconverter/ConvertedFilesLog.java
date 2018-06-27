@@ -2,7 +2,9 @@ package phrasalelastic.text2jsonconverter;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ConvertedFilesLog {
 
@@ -30,8 +32,8 @@ public class ConvertedFilesLog {
         return logFile;
     }
 
-    public List<String> readAlreadyConvertedFiles() throws IOException {
-        List<String> namesOfConvertedFiles = new ArrayList<>();
+    public Set<String> readAlreadyConvertedFiles() throws IOException {
+        Set<String> namesOfConvertedFiles = new HashSet<>();
         try (BufferedReader in = new BufferedReader(new FileReader(alreadyConvertedFilesLog.getCanonicalPath()))) {
             String fileName;
             while ((fileName = in.readLine()) != null) {

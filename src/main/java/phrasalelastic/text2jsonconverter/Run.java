@@ -11,8 +11,9 @@ public class Run {
         String pathToOutputJSONdocumentsFolder = args[1];
         String translationSystemAddress = args[2];
         int translationSystemPortNumber = Integer.valueOf(args[3]);
+        int maxNumDocumentsToConvert = 10;
 
         DocumentConverter dc = new DocumentConverter(pathToInputDocumentsFolder, pathToOutputJSONdocumentsFolder, translationSystemAddress, translationSystemPortNumber);
-        dc.runConversionFromRawFilesToJSONTranslatedDocuments();
+        dc.runConversionFromRawFilesToJSONTranslatedDocuments(maxNumDocumentsToConvert);
     }
 }

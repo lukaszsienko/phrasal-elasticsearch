@@ -3,6 +3,7 @@ package phrasalelastic.text2jsonconverter;
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,7 +80,15 @@ public class LanguageDetector {
 
         String pathToJar = LanguageDetector.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPathToJar = URLDecoder.decode(pathToJar, "UTF-8");
-        JarFile jarFile = new JarFile(decodedPathToJar);
+        JarFile jarFile = null;
+        try {
+            jarFile = new JarFile(decodedPathToJar);
+        } catch (IOException e) {
+            //case only for developing wrapper in IDE, works for Intellij IDEA
+            String src = System.getProperty("user.dir")+folderPath;
+            FileUtils.copyDirectoryToDirectory(Paths.get(src).toFile(), Paths.get(outputPath).toFile());
+            return;
+        }
 
         URI uriToJar = URI.create("jar:file:"+decodedPathToJar);
         Map<String, String> env = new HashMap<>();

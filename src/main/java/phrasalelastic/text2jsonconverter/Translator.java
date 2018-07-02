@@ -34,12 +34,12 @@ public class Translator {
         }
     }
 
-    public List<String> translateFromPolishToEnglish(List<String> polishInput) {
+    public List<String> translate(List<String> input) {
         List<String> translation = new ArrayList<>();
         boolean retryTranslation = false;
         do {
             try {
-                translation = tryToTranslate(polishInput);
+                translation = tryToTranslate(input);
                 retryTranslation = false;
             } catch(Exception e) {
                 initializeConnection();
@@ -54,8 +54,8 @@ public class Translator {
     private List<String> tryToTranslate(List<String> input) throws IOException {
         List<String> translatedSentences = new ArrayList<>();
         for (int i = 0; i < input.size(); i++) {
-            String nextPolishSentence = input.get(i);
-            outputToTranslate.println(nextPolishSentence);
+            String nextInputSentence = input.get(i);
+            outputToTranslate.println(nextInputSentence);
             String translation = inputWithTranslation.readLine();
             if (i == 0 && translation == null) {
                 throw new IOException("Connection timeout.");

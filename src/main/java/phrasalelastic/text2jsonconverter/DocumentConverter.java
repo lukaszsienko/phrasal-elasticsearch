@@ -19,20 +19,26 @@ import phrasalelastic.text2jsonconverter.LanguageDetector.Language;
 public class DocumentConverter {
 
     private final String pathToInputDocumentsDir;
+    private final String pathToPL2EngTranslations;
+    private final String pathToEng2PLTranslations;
     private final String pathToOutputDocumentsDir;
     private final LanguageDetector detector;
-    private final Translator translator;
+    private final Translator joshua;
+    private final Translator phrasal;
     private final ConvertedFilesLog convertedFilesLog;
     private final ConceptsDownloader conceptsDownloader;
     private int convertedDocsInThisRun = 0;
 
-    public DocumentConverter(String pathToInputDocumentsFolder, String pathToOutputJSONdocumentsFolder, String translationSystemAddress, int translationSystemPortNumber) throws Exception {
-        pathToInputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToInputDocumentsFolder);
-        pathToOutputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToOutputJSONdocumentsFolder);
-        detector = new LanguageDetector();
-        translator = new Translator(translationSystemAddress, translationSystemPortNumber);
-        convertedFilesLog = new ConvertedFilesLog(pathToInputDocumentsFolder);
-        conceptsDownloader = new ConceptsDownloader();
+    public DocumentConverter(String pathToInputDocumentsFolder, String pathToPL2EngTranslations, String pathToEng2PLTranslations, String pathToOutputJSONdocumentsFolder, Translator joshua, Translator phrasal) throws Exception {
+        this.pathToInputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToInputDocumentsFolder);
+        this.pathToPL2EngTranslations = pathToPL2EngTranslations;
+        this.pathToEng2PLTranslations = pathToEng2PLTranslations;
+        this.pathToOutputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToOutputJSONdocumentsFolder);
+        this.detector = new LanguageDetector();
+        this.joshua = joshua;
+        this.phrasal = phrasal;
+        this.convertedFilesLog = new ConvertedFilesLog(pathToInputDocumentsFolder);
+        this.conceptsDownloader = new ConceptsDownloader();
     }
 
     private String getCanonicalPathOfSpecifiedDirectory(String pathToDirectory) throws IOException {
@@ -58,24 +64,21 @@ public class DocumentConverter {
 
                             convertedDocsInThisRun++;
                             convertedFilesLog.addNewConvertedFileToLog(fileName);
-                        } else {
-                            return;
                         }
 
                     });
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("convertedDocsInThisRun = "+convertedDocsInThisRun);
+        System.out.println("Finished conversion. ConvertedDocsInThisRun = "+convertedDocsInThisRun);
     }
 
     private void convertFile(Path rawTextFilePath, String fileName) {
         String docID = FilenameUtils.removeExtension(fileName);
         List<String> documentSentences = readDocument(rawTextFilePath);
         Language detectedLanguage = detectLanguage(documentSentences, fileName);
-        List<String> detectedConcepts = conceptsDownloader.getConcepts(documentSentences, detectedLanguage);
-        String jsonDocument =  generateJSONdocument(docID, documentSentences, detectedLanguage, detectedConcepts);
-        saveDocumentInOutputDirectory(fileName+".json", jsonDocument);
+        String jsonDocument =  generateJSONDocument(fileName, docID, documentSentences, detectedLanguage);
+        saveDocumentInOutputDirectory(fileName, jsonDocument);
     }
 
     private List<String> readDocument(Path filePath) {
@@ -110,15 +113,43 @@ public class DocumentConverter {
         return Language.OTHER;
     }
 
-    private String generateJSONdocument(String cvID, List<String> documentSentences, Language detectedLanguage, List<String> detectedConcepts) {
+    private String generateJSONDocument(String fileName, String cvID, List<String> documentSentences, Language detectedLanguage) {
         String jsonDocument = null;
         if (detectedLanguage.equals(Language.POLISH)) {
-            List<String> englishTranslation = translator.translateFromPolishToEnglish(documentSentences);
-            if (!englishTranslation.isEmpty()) {
-                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, documentSentences, englishTranslation, detectedConcepts, null);
+            File englishTranslationOfPolishDocument = new File(pathToPL2EngTranslations+"/"+fileName);
+            List<String> englishTranslation = null;
+            if (englishTranslationOfPolishDocument.exists()) {
+                englishTranslation = readDocument(englishTranslationOfPolishDocument.toPath());
+            } else {
+                System.out.println("Calling joshua for english translation...");
+                englishTranslation = joshua.translate(documentSentences);
             }
+
+            if (englishTranslation != null && !englishTranslation.isEmpty()) {
+                List<String> detectedConceptsPolish = conceptsDownloader.getConcepts(documentSentences, detectedLanguage);
+                List<String> detectedConceptsEnglish = conceptsDownloader.getConcepts(englishTranslation, Language.ENGLISH);
+                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, documentSentences, englishTranslation, detectedConceptsPolish, detectedConceptsEnglish);
+            } else {
+                System.out.println("joshua english translation is null or empty, filename = "+fileName);
+            }
+
         } else if (detectedLanguage.equals(Language.ENGLISH)) {
-            jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, null, documentSentences, null, detectedConcepts);
+            File polishTranslationOfEnglishDocument = new File(pathToEng2PLTranslations+"/"+fileName);
+            List<String> polishTranslation = null;
+            if (polishTranslationOfEnglishDocument.exists()) {
+                polishTranslation = readDocument(polishTranslationOfEnglishDocument.toPath());
+            } else {
+                System.out.println("Calling phrasal for polish translation...");
+                polishTranslation = phrasal.translate(documentSentences);
+            }
+
+            if (polishTranslation != null && !polishTranslation.isEmpty()) {
+                List<String> detectedConceptsPolish = conceptsDownloader.getConcepts(polishTranslation, Language.POLISH);
+                List<String> detectedConceptsEnglish = conceptsDownloader.getConcepts(documentSentences, detectedLanguage);
+                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, polishTranslation, documentSentences, detectedConceptsPolish, detectedConceptsEnglish);
+            } else {
+                System.out.println("phrasal polish translation is null or empty, filename = "+fileName);
+            }
         }
         return jsonDocument;
     }

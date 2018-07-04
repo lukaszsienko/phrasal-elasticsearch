@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 public class DocumentsImporter {
 
     private final String pathToJSONfilesDirectory;
-    private final int numerOfDocumentsInOneImportPackage = 5000;
+    private final int numerOfDocumentsInOneImportPackage = 10000;
 
     private RestHighLevelClient client;
     private BulkRequest indexDocumentsReq = new BulkRequest();
@@ -61,6 +61,10 @@ public class DocumentsImporter {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void closeConnection() throws IOException {
+        client.close();
     }
 
     private void indexDocuments() {

@@ -40,19 +40,19 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        MoreLikeThis moreLikeThis = new MoreLikeThis();
+        /*MoreLikeThis moreLikeThis = new MoreLikeThis();
         String query = "java programista bazy danych sql mile widziana znajomość Java, J2EE, Spring, Spring MVC, JSF, Thymeleaf, Hibernate, Maven, Git";
-        moreLikeThis.doMoreLikeThisSearch(query);
+        moreLikeThis.doMoreLikeThisSearch(query);*/
 
 
 
-        //DocumentsImporter documentsImporter = new DocumentsImporter("/home/lsienko/Pobrane/test_elastic/oferty_json");
-        //documentsImporter.importToElastic();
-        //Main main = new Main();
+        /*DocumentsImporter documentsImporter = new DocumentsImporter("/home/lsienko/Pobrane/cv/jo_cv/json_cv");
+        documentsImporter.importToElastic();*/
+        Main main = new Main();
         //main.deleteIndex();
         //main.createIndex();
-        //main.getAllDocuments();
-        //main.closeApp();
+        main.getAllDocuments();
+        main.closeApp();
     }
 
 
@@ -75,6 +75,9 @@ public class Main {
                 "  {\n" +
                         "    \"cv\": {\n" +
                         "      \"properties\": {\n" +
+                        "        \"cv_id\": {\n" +
+                        "          \"type\": \"keyword\"\n" +
+                        "        },\n" +
                         "        \"cv_lang_original\": {\n" +
                         "          \"type\": \"keyword\"\n" +
                         "        },\n" +

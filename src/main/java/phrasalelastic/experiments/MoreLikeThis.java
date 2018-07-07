@@ -30,7 +30,9 @@ public class MoreLikeThis {
                         new String[] {lang},/*{"cv_pl", "cv_en"}*/
                         new String[] {queryText},
                         new MoreLikeThisQueryBuilder.Item[]{});
-        //moreLikeThisQueryBuilder.minTermFreq(1);
+        moreLikeThisQueryBuilder.minTermFreq(1);
+        moreLikeThisQueryBuilder.maxQueryTerms(300);
+        moreLikeThisQueryBuilder.minDocFreq(2);
 
         SearchRequest request = new SearchRequest("cvbase");
         request.types("cv");
@@ -40,6 +42,8 @@ public class MoreLikeThis {
         request.source(searchSourceBuilder);
 
         Set<String> results = new LinkedHashSet<>();
+        int plNum = 0;
+        int enNum = 0;
         try {
             SearchResponse searchResponse = client.search(request);
             SearchHits hits = searchResponse.getHits();
@@ -47,11 +51,20 @@ public class MoreLikeThis {
             for (SearchHit hit : searchHits) {
                 Map<String, Object> sourceAsMap = hit.getSourceAsMap();
                 String cv_id = (String) sourceAsMap.get("cv_id");
+                String cv_lang = (String) sourceAsMap.get("cv_lang_original");
+                if (cv_lang.equals("pl")) {
+                    plNum++;
+                } else if (cv_lang.equals("en")) {
+                    enNum++;
+                }
                 results.add(cv_id);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        int allCv = plNum+enNum;
+        System.out.println(lang+">   Polish cv: "+plNum+"/"+allCv+"  "+(((float)plNum/allCv)*100));
+        System.out.println(lang+">   English cv: "+enNum+"/"+allCv+"  "+(((float)enNum/allCv)*100));
 
         return results;
     }

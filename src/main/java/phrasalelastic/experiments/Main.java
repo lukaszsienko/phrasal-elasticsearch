@@ -67,13 +67,13 @@ public class Main {
             String englishJobOrder = enSentences.stream().collect(Collectors.joining(" \n "));
             String polishJobOrder = plSentences.stream().collect(Collectors.joining(" \n "));
 
+            System.out.println("\nTest name: "+testFolder);
             Set<String> eng_result = moreLikeThis.doMoreLikeThisSearch(englishJobOrder, "cv_en");
             Set<String> pol_result = moreLikeThis.doMoreLikeThisSearch(polishJobOrder, "cv_pl");
 
             Set<String> intersection = new LinkedHashSet<>(eng_result);
             intersection.retainAll(pol_result);
 
-            System.out.println("\nTest name: "+testFolder);
             System.out.println("CV dla ENG query: "+eng_result.size());
             System.out.println("CV dla POL query: "+pol_result.size());
             System.out.println("Intersection: "+intersection.size()+" out of "+ Math.min(eng_result.size(), pol_result.size()));

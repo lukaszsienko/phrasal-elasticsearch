@@ -21,24 +21,24 @@ public class DocumentConverter {
     private final String pathToInputDocumentsDir;
     private final String pathToPL2EngTranslations;
     private final String pathToEng2PLTranslations;
+    private final String pathToConceptsDir;
     private final String pathToOutputDocumentsDir;
     private final LanguageDetector detector;
     private final Translator joshua;
     private final Translator phrasal;
     private final ConvertedFilesLog convertedFilesLog;
-    private final ConceptsDownloader conceptsDownloader;
     private int convertedDocsInThisRun = 0;
 
-    public DocumentConverter(String pathToInputDocumentsFolder, String pathToPL2EngTranslations, String pathToEng2PLTranslations, String pathToOutputJSONdocumentsFolder, Translator joshua, Translator phrasal) throws Exception {
+    public DocumentConverter(String pathToInputDocumentsFolder, String pathToPL2EngTranslations, String pathToEng2PLTranslations, String pathToConceptsFolder, String pathToOutputJSONdocumentsFolder, Translator joshua, Translator phrasal) throws Exception {
         this.pathToInputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToInputDocumentsFolder);
-        this.pathToPL2EngTranslations = pathToPL2EngTranslations;
-        this.pathToEng2PLTranslations = pathToEng2PLTranslations;
+        this.pathToPL2EngTranslations = getCanonicalPathOfSpecifiedDirectory(pathToPL2EngTranslations);
+        this.pathToEng2PLTranslations = getCanonicalPathOfSpecifiedDirectory(pathToEng2PLTranslations);
+        this.pathToConceptsDir = getCanonicalPathOfSpecifiedDirectory(pathToConceptsFolder);
         this.pathToOutputDocumentsDir = getCanonicalPathOfSpecifiedDirectory(pathToOutputJSONdocumentsFolder);
         this.detector = new LanguageDetector();
         this.joshua = joshua;
         this.phrasal = phrasal;
         this.convertedFilesLog = new ConvertedFilesLog(pathToInputDocumentsFolder);
-        this.conceptsDownloader = new ConceptsDownloader();
     }
 
     private String getCanonicalPathOfSpecifiedDirectory(String pathToDirectory) throws IOException {
@@ -58,11 +58,12 @@ public class DocumentConverter {
                     .forEach(rawTextFilePath -> {
 
                         String fileName = rawTextFilePath.getFileName().toString();
-                        if (convertedDocsInThisRun <= maxNumDocumentsToConvert && !alreadyConvertedFiles.contains(fileName)) {
+                        if (!fileName.equals("log_converted_files") && convertedDocsInThisRun <= maxNumDocumentsToConvert && !alreadyConvertedFiles.contains(fileName)) {
 
                             convertFile(rawTextFilePath, fileName);
 
                             convertedDocsInThisRun++;
+                            System.out.println(convertedDocsInThisRun);
                             convertedFilesLog.addNewConvertedFileToLog(fileName);
                         }
 
@@ -114,6 +115,8 @@ public class DocumentConverter {
     }
 
     private String generateJSONDocument(String fileName, String cvID, List<String> documentSentences, Language detectedLanguage) {
+        List<String> detectedConcepts = getConcepts(fileName);
+
         String jsonDocument = null;
         if (detectedLanguage.equals(Language.POLISH)) {
             File englishTranslationOfPolishDocument = new File(pathToPL2EngTranslations+"/"+fileName);
@@ -121,14 +124,13 @@ public class DocumentConverter {
             if (englishTranslationOfPolishDocument.exists()) {
                 englishTranslation = readDocument(englishTranslationOfPolishDocument.toPath());
             } else {
-                System.out.println("Calling joshua for english translation...");
+                System.out.println("Calling joshua for english translation... file="+fileName);
                 englishTranslation = joshua.translate(documentSentences);
             }
 
             if (englishTranslation != null && !englishTranslation.isEmpty()) {
-                List<String> detectedConceptsPolish = conceptsDownloader.getConcepts(documentSentences, detectedLanguage);
-                List<String> detectedConceptsEnglish = conceptsDownloader.getConcepts(englishTranslation, Language.ENGLISH);
-                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, documentSentences, englishTranslation, detectedConceptsPolish, detectedConceptsEnglish);
+
+                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, documentSentences, englishTranslation, detectedConcepts);
             } else {
                 System.out.println("joshua english translation is null or empty, filename = "+fileName);
             }
@@ -139,19 +141,24 @@ public class DocumentConverter {
             if (polishTranslationOfEnglishDocument.exists()) {
                 polishTranslation = readDocument(polishTranslationOfEnglishDocument.toPath());
             } else {
-                System.out.println("Calling phrasal for polish translation...");
+                System.out.println("Calling phrasal for polish translation... file="+fileName);
                 polishTranslation = phrasal.translate(documentSentences);
             }
 
             if (polishTranslation != null && !polishTranslation.isEmpty()) {
-                List<String> detectedConceptsPolish = conceptsDownloader.getConcepts(polishTranslation, Language.POLISH);
-                List<String> detectedConceptsEnglish = conceptsDownloader.getConcepts(documentSentences, detectedLanguage);
-                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, polishTranslation, documentSentences, detectedConceptsPolish, detectedConceptsEnglish);
+                jsonDocument = GeneratorOfDocumentsInJSON.generateJSON(cvID, detectedLanguage, polishTranslation, documentSentences, detectedConcepts);
             } else {
                 System.out.println("phrasal polish translation is null or empty, filename = "+fileName);
             }
         }
         return jsonDocument;
+    }
+
+    private List<String> getConcepts(String filename) {
+        File conceptListFile = new File(pathToConceptsDir+"/"+filename);
+        List<String> concepts = readDocument(conceptListFile.toPath());
+        List<String> cleanList = concepts.stream().map(String::trim).filter(concept -> !concept.isEmpty()).collect(Collectors.toList());
+        return cleanList;
     }
 
     private void saveDocumentInOutputDirectory(String filename, String jsonDocument) {

@@ -85,7 +85,7 @@ public class LanguageDetector {
             jarFile = new JarFile(decodedPathToJar);
         } catch (IOException e) {
             //case only for developing wrapper in IDE, works for Intellij IDEA
-            String src = System.getProperty("user.dir")+folderPath;
+            String src = System.getProperty("user.dir")+"/experiments/"+folderPath;
             FileUtils.copyDirectoryToDirectory(Paths.get(src).toFile(), Paths.get(outputPath).toFile());
             return;
         }

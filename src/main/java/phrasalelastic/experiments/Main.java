@@ -24,8 +24,13 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.Map;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -39,24 +44,62 @@ public class Main {
         client.close();
     }
 
+    public static String dir = "/home/lsienko/Pobrane/cv/jo_cv/oferty_pracy";
+    public static String[] tests = new String[] {
+            "18_4CF337AA-E224-4A92-9D58-2EDAFE72B914_scrum",
+            "21_260BC571-8A82-46EC-A225-5BC50DF9C58F_java",
+            "32_3DD2D0A2-3D72-4AA1-9DE4-67426B2972EF_plsql",
+            "40_555C2E6A-513C-41B1-86D2-1906EF080618_web_dev",
+            "sii_senior_java",
+            "sollers_java_developer"};
+
     public static void main(String[] args) throws IOException {
-        /*MoreLikeThis moreLikeThis = new MoreLikeThis();
-        String query = "java programista bazy danych sql mile widziana znajomość Java, J2EE, Spring, Spring MVC, JSF, Thymeleaf, Hibernate, Maven, Git";
-        moreLikeThis.doMoreLikeThisSearch(query);*/
+        MoreLikeThis moreLikeThis = new MoreLikeThis();
+        for (String testFolder: tests) {
+            String canonicalPath = dir + "/" + testFolder;
+            String engPath = canonicalPath + "/" + "en";
+            String polPath = canonicalPath + "/" + "pl";
+            File en = new File(engPath);
+            File pl = new File(polPath);
+            List<String> enSentences = readDocument(en.toPath());
+            List<String> plSentences = readDocument(pl.toPath());
 
+            String englishJobOrder = enSentences.stream().collect(Collectors.joining(" \n "));
+            String polishJobOrder = plSentences.stream().collect(Collectors.joining(" \n "));
 
+            System.out.println("\nTest name: "+testFolder);
+            Set<String> eng_result = moreLikeThis.doMoreLikeThisSearch(englishJobOrder, "cv_en");
+            Set<String> pol_result = moreLikeThis.doMoreLikeThisSearch(polishJobOrder, "cv_pl");
+
+            Set<String> intersection = new LinkedHashSet<>(eng_result);
+            intersection.retainAll(pol_result);
+
+            System.out.println("CV dla ENG query: "+eng_result.size());
+            System.out.println("CV dla POL query: "+pol_result.size());
+            System.out.println("Intersection: "+intersection.size()+" out of "+ Math.min(eng_result.size(), pol_result.size()));
+            System.out.println("Intersection rate: "+((float)intersection.size() / Math.min(eng_result.size(), pol_result.size()))*100+"\n");
+        }
+        moreLikeThis.closeConnection();
 
         /*DocumentsImporter documentsImporter = new DocumentsImporter("/home/lsienko/Pobrane/cv/jo_cv/json_cv");
-        documentsImporter.importToElastic();*/
-        Main main = new Main();
+        documentsImporter.importToElastic();
+        documentsImporter.closeConnection();*/
+        //Main main = new Main();
         //main.deleteIndex();
         //main.createIndex();
-        main.getAllDocuments();
-        main.closeApp();
+        //main.getAllDocuments();
+        //main.closeApp();
     }
 
-
-
+    private static List<String> readDocument(Path filePath) {
+        List<String> document = new ArrayList<>();
+        try {
+            document = new ArrayList<>(Files.readAllLines(filePath, Charset.defaultCharset()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return document;
+    }
 
     private void deleteIndex() {
         DeleteIndexRequest request = new DeleteIndexRequest("cvbase");

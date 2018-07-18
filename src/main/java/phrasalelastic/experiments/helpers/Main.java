@@ -1,4 +1,4 @@
-package phrasalelastic.experiments;
+package phrasalelastic.experiments.helpers;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
@@ -51,10 +51,15 @@ public class Main {
             "32_3DD2D0A2-3D72-4AA1-9DE4-67426B2972EF_plsql",
             "40_555C2E6A-513C-41B1-86D2-1906EF080618_web_dev",
             "sii_senior_java",
-            "sollers_java_developer"};
+            "sollers_java_developer",
+            "samsung_javascript",
+            "pentacomp_java",
+            "tvp_dotnet",
+            "cyfrowy_python"
+    };
 
     public static void main(String[] args) throws IOException {
-        MoreLikeThis moreLikeThis = new MoreLikeThis();
+        /*MoreLikeThis moreLikeThis = new MoreLikeThis();
         for (String testFolder: tests) {
             String canonicalPath = dir + "/" + testFolder;
             String engPath = canonicalPath + "/" + "en";
@@ -68,8 +73,8 @@ public class Main {
             String polishJobOrder = plSentences.stream().collect(Collectors.joining(" \n "));
 
             System.out.println("\nTest name: "+testFolder);
-            Set<String> eng_result = moreLikeThis.doMoreLikeThisSearch(englishJobOrder, "cv_en");
-            Set<String> pol_result = moreLikeThis.doMoreLikeThisSearch(polishJobOrder, "cv_pl");
+            Set<String> eng_result = moreLikeThis.doMoreLikeThisSearch("cvbase", englishJobOrder, "cv_en");
+            Set<String> pol_result = moreLikeThis.doMoreLikeThisSearch("cvbase", polishJobOrder, "cv_pl");
 
             Set<String> intersection = new LinkedHashSet<>(eng_result);
             intersection.retainAll(pol_result);
@@ -79,7 +84,7 @@ public class Main {
             System.out.println("Intersection: "+intersection.size()+" out of "+ Math.min(eng_result.size(), pol_result.size()));
             System.out.println("Intersection rate: "+((float)intersection.size() / Math.min(eng_result.size(), pol_result.size()))*100+"\n");
         }
-        moreLikeThis.closeConnection();
+        moreLikeThis.closeConnection();*/
 
         /*DocumentsImporter documentsImporter = new DocumentsImporter("/home/lsienko/Pobrane/cv/jo_cv/json_cv");
         documentsImporter.importToElastic();
@@ -113,28 +118,19 @@ public class Main {
     }
 
     private void createIndex() throws IOException {
-        CreateIndexRequest request = new CreateIndexRequest("cvbase");
+        CreateIndexRequest request = new CreateIndexRequest("cvbase_originals_equal");
         request.mapping("cv",
                 "  {\n" +
                         "    \"cv\": {\n" +
                         "      \"properties\": {\n" +
-                        "        \"cv_id\": {\n" +
+                        "        \"cv_file_name\": {\n" +
                         "          \"type\": \"keyword\"\n" +
                         "        },\n" +
-                        "        \"cv_lang_original\": {\n" +
+                        "        \"cv_lang\": {\n" +
                         "          \"type\": \"keyword\"\n" +
                         "        },\n" +
-                        "        \"cv_pl\": {\n" +
+                        "        \"cv_text\": {\n" +
                         "          \"type\": \"text\"\n" +
-                        "        },\n" +
-                        "        \"cv_en\": {\n" +
-                        "          \"type\": \"text\"\n" +
-                        "        },\n" +
-                        "        \"cv_pl_concepts\": {\n" +
-                        "          \"type\": \"keyword\"\n" +
-                        "        },\n" +
-                        "        \"cv_en_concepts\": {\n" +
-                        "          \"type\": \"keyword\"\n" +
                         "        }\n" +
                         "      }\n" +
                         "    }\n" +

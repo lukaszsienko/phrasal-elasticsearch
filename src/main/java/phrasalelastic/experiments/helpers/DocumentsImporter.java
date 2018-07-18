@@ -1,11 +1,10 @@
-package phrasalelastic.experiments;
+package phrasalelastic.experiments.helpers;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -33,18 +32,19 @@ public class DocumentsImporter {
         client = new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200, "http")));
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         DocumentsImporter importer = new DocumentsImporter(args[0]);
-        importer.importToElastic();
+        importer.importToElastic(args[1]);
+        importer.closeConnection();
     }
 
-    public void importToElastic() {
+    public void importToElastic(String indexName) {
         try (Stream<Path> docsToImportPaths = Files.walk(Paths.get(pathToJSONfilesDirectory))) {
             docsToImportPaths.filter(Files::isRegularFile)
                     .forEach(rawTextFilePath -> {
                         String jsonDoc = readFileAsString(rawTextFilePath);
 
-                        IndexRequest request = new IndexRequest("cvbase","cv");
+                        IndexRequest request = new IndexRequest(indexName,"cv");
                         request.source(jsonDoc, XContentType.JSON);
 
                         indexDocumentsReq.add(request);

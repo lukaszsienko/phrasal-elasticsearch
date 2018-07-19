@@ -16,17 +16,28 @@ import java.util.stream.Collectors;
 
 public class Experiment1 {
 
-    private static class ResultStats {
+    private static class ResultLangDistr {
         public int allResultCV;
         public int polishResultCV;
         public int englishResultCV;
 
-        public ResultStats(int allResultCV, int polishResultCV, int englishResultCV) {
+        public ResultLangDistr(int allResultCV, int polishResultCV, int englishResultCV) {
             this.allResultCV = allResultCV;
             this.polishResultCV = polishResultCV;
             this.englishResultCV = englishResultCV;
         }
     }
+
+    private static String offersDirectory;
+    private static Set<String> plOffersIds;
+    private static Set<String> enOffersIds;
+    private static Set<String> plCvIds;
+    private static Set<String> enCvIds;
+    private static String outputPath;
+    private static MoreLikeThis moreLikeThisHelper;
+    private static int requestedResultsNum;
+
+
 
     /**
      * W indeksie o nazwie "cvbase_originals_equal" znajduje się 53286 dokumentów CV,
@@ -40,32 +51,34 @@ public class Experiment1 {
      * i sprawdzamy ile jest polskich a ile angielskich odpowiedzi.
      */
     public static void main(String[] args) throws FileNotFoundException {
-        Set<String> plOffers = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/polish_offers_list");
-        Set<String> enOffers = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/english_offers_list");
-        Set<String> plCv = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/list_polish_cv_cut");
-        Set<String> enCv = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/list_english_cv");
-        String outputPath = "/home/lsienko/Pobrane/cv/jo_cv/experiments/1";
+        offersDirectory = "/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/oferty";
+        plOffersIds = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/polish_offers_list");
+        enOffersIds = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/english_offers_list");
+        plCvIds = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/list_polish_cv_cut");
+        enCvIds = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/list_english_cv");
+        outputPath = "/home/lsienko/Pobrane/cv/jo_cv/experiments/1";
 
-        MoreLikeThis moreLikeThisHelper = new MoreLikeThis();
-        final int requestedResultsNum = 1000;
+        moreLikeThisHelper = new MoreLikeThis();
+        requestedResultsNum = 1000;
 
-        List<ResultStats> langDistPolishOffer = new ArrayList<>();
-        for (String nextPolishOffer : plOffers) {
-            Set<String> returnedCVs = moreLikeThisHelper.doMoreLikeThisSearch("cvbase_originals_equal", "cv", "cv_text", nextPolishOffer, requestedResultsNum);
-            ResultStats resultStats = analizeResults(returnedCVs, plCv, enCv);
-            langDistPolishOffer.add(resultStats);
-        }
-        saveResultOnDisk(outputPath, "polishOffersLangDistr", langDistPolishOffer);
+        List<ResultLangDistr> polishOffersLangDistr = runExperimentLangDistrForOffers(plOffersIds);
+        saveResultOnDisk(outputPath, "polishOffersLangDistr", polishOffersLangDistr);
 
-        List<ResultStats> langDistEnglishOffer = new ArrayList<>();
-        for (String nextEnglishOffer : enOffers) {
-            Set<String> returnedCVs = moreLikeThisHelper.doMoreLikeThisSearch("cvbase_originals_equal", "cv", "cv_text", nextEnglishOffer, requestedResultsNum);
-            ResultStats resultStats = analizeResults(returnedCVs, plCv, enCv);
-            langDistEnglishOffer.add(resultStats);
-        }
-        saveResultOnDisk(outputPath, "englishOffersLangDistr", langDistEnglishOffer);
+        List<ResultLangDistr> englishOffersLangDistr = runExperimentLangDistrForOffers(enOffersIds);
+        saveResultOnDisk(outputPath, "englishOffersLangDistr", englishOffersLangDistr);
 
         moreLikeThisHelper.closeConnection();
+    }
+
+    private static List<ResultLangDistr> runExperimentLangDistrForOffers(Set<String> offersIds) {
+        List<ResultLangDistr> offersLangDistr = new ArrayList<>();
+        for (String nextOfferId : offersIds) {
+            String nextOfferText = readDocumentFromFile(offersDirectory+"/"+nextOfferId);
+            Set<String> returnedCVs = moreLikeThisHelper.doMoreLikeThisSearch("cvbase_originals_equal", "cv", "cv_text", nextOfferText, requestedResultsNum);
+            ResultLangDistr resultLangDistr = analizeResults(returnedCVs);
+            offersLangDistr.add(resultLangDistr);
+        }
+        return offersLangDistr;
     }
 
     private static Set<String> readSetFromFile(String path) {
@@ -78,20 +91,31 @@ public class Experiment1 {
         return set;
     }
 
-    private static ResultStats analizeResults(Set<String> returnedCVs, Set<String> plCv, Set<String> enCv) {
+    private static ResultLangDistr analizeResults(Set<String> returnedCVs) {
         int plNum = 0;
         int engNum = 0;
         for (String cvFileName : returnedCVs) {
-            if (plCv.contains(cvFileName)) {
+            if (plCvIds.contains(cvFileName)) {
                 plNum++;
-            } else if (enCv.contains(cvFileName)) {
+            } else if (enCvIds.contains(cvFileName)) {
                 engNum++;
             }
         }
-        return new ResultStats(returnedCVs.size(), plNum, engNum);
+        return new ResultLangDistr(returnedCVs.size(), plNum, engNum);
     }
 
-    private static void saveResultOnDisk(String dir, String filename, List<ResultStats> results) throws FileNotFoundException {
+    private static String readDocumentFromFile(String path) {
+        List<String> fileLines;
+        try {
+            fileLines = Files.readAllLines(Paths.get(path), Charset.defaultCharset());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return fileLines.stream().collect(Collectors.joining("\n"));
+    }
+
+    private static void saveResultOnDisk(String dir, String filename, List<ResultLangDistr> results) throws FileNotFoundException {
         String text = results.stream()
                 .map(resultObject -> resultObject.allResultCV + "," + resultObject.polishResultCV + "," + resultObject.englishResultCV)
                 .collect(Collectors.joining("\n"));
@@ -99,6 +123,4 @@ public class Experiment1 {
         out.write(text);
         out.close();
     }
-
-
 }

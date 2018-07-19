@@ -35,7 +35,7 @@ public class Experiment4 {
         }
     }
 
-    private static String offersDirectory;
+    //private static String offersDirectory;
     private static String offersEnglishGTDir;
     private static String offersEnglishTranslationJoshuaDir;
     private static Set<String> plOffersIds;
@@ -53,7 +53,7 @@ public class Experiment4 {
      * Chcemy sprawdzić w jakim stopniu tłumaczenie realizuje niezależność wyszukiwania od języka.
      */
     public static void main(String[] args) throws FileNotFoundException {
-        offersDirectory = "/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/oferty";
+        //offersDirectory = "/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/oferty";
         offersEnglishGTDir = "/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/pl_eng_gt";
         offersEnglishTranslationJoshuaDir = "/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/pl_eng_joshua";
         plOffersIds = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/polish_offers_list");

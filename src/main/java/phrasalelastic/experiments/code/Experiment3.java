@@ -116,7 +116,7 @@ public class Experiment3 {
             Set<String> sumPolEng = new LinkedHashSet<>(returnedCVsPolishOffer);
             sumPolEng.addAll(returnedCVsEnglishOffer);
 
-            Set<String> intersectionPolEngBoth = new LinkedHashSet<>(returnedCVsEnglishOffer);
+            Set<String> intersectionPolEngBoth = new LinkedHashSet<>(sumPolEng);
             intersectionPolEng.retainAll(returnedCVsBothOffer);
 
             ResultsIntersection result = new ResultsIntersection(returnedCVsPolishOffer.size(),

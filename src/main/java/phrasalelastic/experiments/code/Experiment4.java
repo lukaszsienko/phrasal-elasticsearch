@@ -57,7 +57,7 @@ public class Experiment4 {
         offersEnglishGTDir = "/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/pl_eng_gt";
         offersEnglishTranslationJoshuaDir = "/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/pl_eng_joshua";
         plOffersIds = readSetFromFile("/home/lsienko/Pobrane/cv/jo_cv/pracuj_pl_it_polska/wersja_1_formatowanie_zachowane/polish_offers_list");
-        outputPath = "/home/lsienko/Pobrane/cv/jo_cv/experiments/3";
+        outputPath = "/home/lsienko/Pobrane/cv/jo_cv/experiments/4";
 
         moreLikeThisHelper = new MoreLikeThis();
         requestedResultsNum = 1000;

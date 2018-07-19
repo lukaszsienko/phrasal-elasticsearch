@@ -8,23 +8,25 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Experiment1 {
 
-    private static class ResultLangDistr {
-        public int allResultCV;
-        public int polishResultCV;
-        public int englishResultCV;
+    private static class ResultLangDistr implements Comparable<ResultLangDistr> {
+        public Integer allResultCV;
+        public Integer polishResultCV;
+        public Integer englishResultCV;
 
         public ResultLangDistr(int allResultCV, int polishResultCV, int englishResultCV) {
             this.allResultCV = allResultCV;
             this.polishResultCV = polishResultCV;
             this.englishResultCV = englishResultCV;
+        }
+
+        @Override
+        public int compareTo(ResultLangDistr resultLangDistr) {
+            return allResultCV.compareTo(resultLangDistr.allResultCV);
         }
     }
 
@@ -62,9 +64,11 @@ public class Experiment1 {
         requestedResultsNum = 1000;
 
         List<ResultLangDistr> polishOffersLangDistr = runExperimentLangDistrForOffers(plOffersIds);
+        Collections.sort(polishOffersLangDistr);
         saveResultOnDisk(outputPath, "polishOffersLangDistr", polishOffersLangDistr);
 
         List<ResultLangDistr> englishOffersLangDistr = runExperimentLangDistrForOffers(enOffersIds);
+        Collections.sort(englishOffersLangDistr);
         saveResultOnDisk(outputPath, "englishOffersLangDistr", englishOffersLangDistr);
 
         moreLikeThisHelper.closeConnection();
@@ -75,8 +79,10 @@ public class Experiment1 {
         for (String nextOfferId : offersIds) {
             String nextOfferText = readDocumentFromFile(offersDirectory+"/"+nextOfferId);
             Set<String> returnedCVs = moreLikeThisHelper.doMoreLikeThisSearch("cvbase_originals_equal", "cv", "cv_text", nextOfferText, requestedResultsNum);
-            ResultLangDistr resultLangDistr = analizeResults(returnedCVs);
-            offersLangDistr.add(resultLangDistr);
+            if (!returnedCVs.isEmpty()) {
+                ResultLangDistr resultLangDistr = analizeResults(returnedCVs);
+                offersLangDistr.add(resultLangDistr);
+            }
         }
         return offersLangDistr;
     }

@@ -68,7 +68,7 @@ public class Experiment4 {
             //String polishOffer = readDocumentFromFile(offersDirectory+"/"+nextOfferFileName);
             String englishOffer = readDocumentFromFile(offersEnglishGTDir+"/"+nextOfferFileName);
             String englishTranslationOffer = readDocumentFromFile(offersEnglishTranslationJoshuaDir+"/"+nextOfferFileName);
-            Set<String> returnedCVsEnglishOffer = moreLikeThisHelper.doMoreLikeThisSearch("cvbase_originals_equal", "cv", "cv_text", englishOffer, requestedResultsNum);
+            Set<String> returnedCVsEnglishOffer = moreLikeThisHelper.doMoreLikeThisSearch("cvbase_originals_en_only", "cvbase_originals_en_only_type", "cv_text", englishOffer, requestedResultsNum);
             Set<String> returnedCVsEnglishTranslationOffer = moreLikeThisHelper.doMoreLikeThisSearch("cvbase_originals_en_only", "cvbase_originals_en_only_type", "cv_text", englishTranslationOffer, requestedResultsNum);
 
             Set<String> intersectionBoth = new LinkedHashSet<>(returnedCVsEnglishOffer);

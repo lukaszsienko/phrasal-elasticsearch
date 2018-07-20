@@ -102,7 +102,13 @@ public class Experiment3 {
     private static List<ResultsIntersection> runExperimentQueryPlEngIntersection(Set<String> offersToQuery, boolean polishOffers) {
         List<ResultsIntersection> intersections = new ArrayList<>();
 
+        int size = offersToQuery.size();
+        int i = 0;
         for (String nextOffer : offersToQuery) {
+            i++;
+            if (i % 100 == 0) {
+                System.out.println(i);
+            }
             String polishOffer = readDocumentFromFile(polishOffers ? (offersDirectory+"/"+nextOffer) : (offersPolishGTDir+"/"+nextOffer));
             String englishOffer = readDocumentFromFile((polishOffers ? (offersEnglishGTDir+"/"+nextOffer) : offersDirectory+"/"+nextOffer));
             String bothOffers = polishOffer + "\n" + englishOffer;
@@ -117,7 +123,7 @@ public class Experiment3 {
             sumPolEng.addAll(returnedCVsEnglishOffer);
 
             Set<String> intersectionPolEngBoth = new LinkedHashSet<>(sumPolEng);
-            intersectionPolEng.retainAll(returnedCVsBothOffer);
+            intersectionPolEngBoth.retainAll(returnedCVsBothOffer);
 
             ResultsIntersection result = new ResultsIntersection(returnedCVsPolishOffer.size(),
                     returnedCVsEnglishOffer.size(),

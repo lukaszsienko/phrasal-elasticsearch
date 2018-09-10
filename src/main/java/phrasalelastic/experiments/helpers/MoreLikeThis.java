@@ -60,6 +60,40 @@ public class MoreLikeThis {
         return results;
     }
 
+    public Set<String> doMoreLikeThisSearch(String [] searchIndices, String [] searchTypes, String fieldName, String queryText, int resultsNum) {
+        MoreLikeThisQueryBuilder moreLikeThisQueryBuilder = QueryBuilders.moreLikeThisQuery(
+                new String[] {fieldName},
+                new String[] {queryText},
+                new MoreLikeThisQueryBuilder.Item[]{});
+        moreLikeThisQueryBuilder.minTermFreq(1);
+        moreLikeThisQueryBuilder.maxQueryTerms(300);
+        moreLikeThisQueryBuilder.minDocFreq(2);
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(moreLikeThisQueryBuilder);
+        searchSourceBuilder.size(resultsNum);
+
+        SearchRequest request = new SearchRequest(searchIndices);
+        request.types(searchTypes);
+        request.source(searchSourceBuilder);
+
+        Set<String> results = new LinkedHashSet<>();
+        try {
+            SearchResponse searchResponse = client.search(request);
+            SearchHits hitBlock = searchResponse.getHits();
+            List<SearchHit> hitsList = Arrays.asList(hitBlock.getHits());
+            for (SearchHit hit : hitsList) {
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                String cvFileName = (String) sourceAsMap.get("cv_file_name");
+                results.add(cvFileName);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return results;
+    }
+
     public void closeConnection() {
         try {
             client.close();
